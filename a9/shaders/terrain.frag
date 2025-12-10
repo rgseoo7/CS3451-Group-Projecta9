@@ -124,29 +124,31 @@ vec3 apply_fog(vec3 color, vec3 worldPos)
 }
 
 
-// Returns a blend factor in [0,1]:
-// 1 = full grass, 0 = full path (dirt)
-float path_factor(vec2 p)
+float path_factor_world(vec3 worldPos)
 {
-    // p is pos.xy from the original plane space
-    float y = p.y;
+    float x = worldPos.x;
+    float z = worldPos.z;
 
-    // center line of the path: a gentle curve
-    float centerX = 0.3 * sin(1.5 * y);
+    // ---- Curvy center line ----
+    // gentle S-curve: small wiggles that vary over distance
+    float centerX =
+          0.0
+        + 0.25 * sin(0.6 * z)
+        + 0.15 * sin(1.3 * z + 1.0);
 
-    // distance in x from the path center
-    float dist = abs(p.x - centerX);
+    // distance from path center
+    float dist = abs(x - centerX);
 
-    // control path width and edge softness
-    float pathHalfWidth = 0.12;      // adjust to make the path wider/narrower
-    float edgeSoftness = 0.08;
+    // ---- Path width controls ----
+    float pathHalfWidth = 0.35;   // thinner path
+    float edgeSoftness = 0.20;    // feather edges
 
-    // smoothstep(from, to, x): 0 when x<=from, 1 when x>=to
-    // We want: factor=0 near center, factor=1 far away
     float f = smoothstep(pathHalfWidth, pathHalfWidth + edgeSoftness, dist);
 
-    return f; // 0 near path, 1 away from path
+    return f; // 0 = dirt path center, 1 = grass
 }
+
+
 
 
 // Draw the terrain
@@ -168,16 +170,19 @@ vec3 shading_terrain(vec3 pos) {
     vec3 grassColor = lambertPhong * grassTint;
 
     // --- new dirt path color ---
-    vec3 dirtColor = vec3(0.35, 0.26, 0.18); // warm brown; tweak as you like
+    vec3 dirtColor = vec3(0.45, 0.34, 0.22); // a bit brighter brown
 
     // pathFactor = 0 on path, 1 away from path
-    float f = path_factor(pos.xy);
+    // NOTE: now we use WORLD position p, not object-space pos
+    float f = path_factor_world(p);
 
     // blend: near path -> more dirt, away -> more grass
     vec3 groundColor = mix(dirtColor, grassColor, f);
 
     // apply fog based on world-space position p
     groundColor = apply_fog(groundColor, p);
+
+
 
     return groundColor;
 }

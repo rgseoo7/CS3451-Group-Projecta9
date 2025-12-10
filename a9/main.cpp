@@ -56,6 +56,18 @@ public:
         OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/buzz_color.png", "buzz_color");
         OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/star.png", "star_color");
 
+        // tree textures
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Bark__0.jpg", "bark0");
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Bark__1.jpg", "bark1");
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Bark__S.jpg", "barkS");
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Bottom_T.jpg", "barkBottom");
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Mossy_Tr.jpg", "mossyTree");
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Oak_Leav.jpg", "oakLeaves");
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Sonnerat.jpg", "sonnerat");
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Walnut_L.jpg", "walnutLeaves");
+
+
+
         //// ---------- Lights ----------
         opengl_window->Add_Light(Vector3f(3, 1, 3), Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 1), Vector3f(0.5, 0.5, 0.5));
         opengl_window->Add_Light(Vector3f(0, 0, -5), Vector3f(0.1, 0.1, 0.1), Vector3f(0.9, 0.9, 0.9), Vector3f(0.5, 0.5, 0.5));
@@ -84,8 +96,8 @@ public:
             S(2, 2) = 4.0f;   // depth
 
             // Nudge left & down
-            T(0, 3) = -4.5f;  // a bit farther left
-            T(1, 3) = -1.8f;  // a bit farther down
+            T(0, 3) = -7.5f;  // a bit farther left
+            T(1, 3) = -3.2f;  // a bit farther down
             T(2, 3) = -3.0f;  // same depth
 
             terrain->Set_Model_Matrix(T * R * S);
@@ -101,7 +113,7 @@ public:
 
         //// trees alng path
         {
-            const float xLeft = -1.2f;  // farther left
+            const float xLeft = -6.0f;  // farther left
             const float xRight = 1.2f;  // farther right
             const float zPos = -2.0f;  // a bit "into" the scene
 
@@ -116,15 +128,17 @@ public:
                 S(0, 0) = S(1, 1) = S(2, 2) = 0.15f;
 
                 T(0, 3) = xLeft;
-                T(1, 3) = -1.5f;  // drop down to match terrain height-ish
+                T(1, 3) = -2.0f;
                 T(2, 3) = zPos;
 
                 tree->Set_Model_Matrix(T * S);
 
-                tree->Set_Ka(Vector3f(0.05f, 0.1f, 0.05f));           // darker ambient
-                tree->Set_Kd(Vector3f(0.2f, 0.5f, 0.2f));             // green diffuse
-                tree->Set_Ks(Vector3f(0.05f, 0.05f, 0.05f));          // low spec
+                tree->Set_Ka(Vector3f(0.05f, 0.1f, 0.05f));
+                tree->Set_Kd(Vector3f(0.2f, 0.5f, 0.2f));
+                tree->Set_Ks(Vector3f(0.05f, 0.05f, 0.05f));
                 tree->Set_Shininess(16.0f);
+
+                tree->Add_Texture("tex_color", OpenGLTextureLibrary::Get_Texture("mossyTree"));
 
                 tree->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("basic"));
             }
@@ -140,7 +154,7 @@ public:
                 S(0, 0) = S(1, 1) = S(2, 2) = 0.15f;
 
                 T(0, 3) = xRight;
-                T(1, 3) = -1.5f;  // same height
+                T(1, 3) = -2.0f;
                 T(2, 3) = zPos;
 
                 tree->Set_Model_Matrix(T * S);
@@ -150,8 +164,12 @@ public:
                 tree->Set_Ks(Vector3f(0.05f, 0.05f, 0.05f));
                 tree->Set_Shininess(16.0f);
 
+                tree->Add_Texture("tex_color", OpenGLTextureLibrary::Get_Texture("mossyTree"));
+
                 tree->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("basic"));
             }
+
+
         }
 
         //// ---------- Finalize all mesh objects ----------
