@@ -201,9 +201,9 @@ public:
                 0, 0, 0.5, 0,
                 0, 0, 0, 1;
             t << 1, 0, 0, -2,
-                 0, 1, 0, 0.5,
-                 0, 0, 1, 0,
-                 0, 0, 0, 1,
+                0, 1, 0, 0.5,
+                0, 0, 1, 0,
+                0, 0, 0, 1;
             terrain->Set_Model_Matrix(t * s * r);
 
             //// set object's material
@@ -214,6 +214,69 @@ public:
 
             //// bind shader to object (we do not bind texture for this object because we create noise for texture)
             terrain->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("terrain"));
+        }
+
+        // trees along path
+        {
+            const int NUM_TREES_PER_SIDE = 9; // 9 left, 9 right
+            const float zStart = -1.5f;       // where along the path they begin
+            const float zStep = 0.4f;        // spacing between trees
+            const float xLeft = -1.0f;       // x position for left side
+            const float xRight = 1.0f;       // x position for right side
+
+            for (int i = 0; i < NUM_TREES_PER_SIDE; ++i) {
+                float z = zStart + i * zStep;   // move forward along your path
+
+                // --- Left tree ---
+                {
+                    auto tree = Add_Obj_Mesh_Object("obj/trees9.obj");
+
+                    Matrix4f S, T;
+                    S.setIdentity();
+                    S(0, 0) = S(1, 1) = S(2, 2) = 0.20f;   // scale tree smaller if needed
+
+                    T.setIdentity();
+                    T(0, 3) = xLeft;  // left/right
+                    T(1, 3) = 0.0f;   // vertical offset
+                    T(2, 3) = z;      // along the path
+
+                    tree->Set_Model_Matrix(T * S);
+
+                    tree->Set_Ka(Vector3f(0.1f, 0.1f, 0.1f));
+                    tree->Set_Kd(Vector3f(0.7f, 0.7f, 0.7f));
+                    tree->Set_Ks(Vector3f(0.2f, 0.2f, 0.2f));
+                    tree->Set_Shininess(32.0f);
+
+                    // use blend shader if leaves have alpha, otherwise basic
+                    tree->Add_Shader_Program(
+                        OpenGLShaderLibrary::Get_Shader("basic"));
+                    // or: "blend" if needed
+                }
+
+                // --- Right tree ---
+                {
+                    auto tree = Add_Obj_Mesh_Object("obj/trees9.obj");
+
+                    Matrix4f S, T;
+                    S.setIdentity();
+                    S(0, 0) = S(1, 1) = S(2, 2) = 0.20f;
+
+                    T.setIdentity();
+                    T(0, 3) = xRight;
+                    T(1, 3) = 0.0f;
+                    T(2, 3) = z;
+
+                    tree->Set_Model_Matrix(T * S);
+
+                    tree->Set_Ka(Vector3f(0.1f, 0.1f, 0.1f));
+                    tree->Set_Kd(Vector3f(0.7f, 0.7f, 0.7f));
+                    tree->Set_Ks(Vector3f(0.2f, 0.2f, 0.2f));
+                    tree->Set_Shininess(32.0f);
+
+                    tree->Add_Shader_Program(
+                        OpenGLShaderLibrary::Get_Shader("basic"));
+                }
+            }
         }
 
         //// Here we show an example of adding a transparent object with alpha blending

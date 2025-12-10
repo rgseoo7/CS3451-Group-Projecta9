@@ -105,24 +105,85 @@ vec4 shading_phong(light li, vec3 e, vec3 p, vec3 s, vec3 n)
     return vec4(ambColor + difColor + specColor, 1);
 }
 
+// simple linear fog based on distance from camera
+vec3 apply_fog(vec3 color, vec3 worldPos)
+{
+    // camera position from camera UBO
+    vec3 camPos = position.xyz;
+
+    float distToCam = length(worldPos - camPos);
+
+    // tweak these to taste
+    float fogStart = 3.0;
+    float fogEnd   = 12.0;
+
+    // 1 near, 0 far
+    float fogFactor = clamp((fogEnd - distToCam) / (fogEnd - fogStart), 0.0, 1.0);
+
+    // dark blue night fog
+    vec3 fogColor = vec3(0.02, 0.03, 0.06);
+
+    return mix(fogColor, color, fogFactor);
+}
+
+// Returns a blend factor in [0,1]:
+// 1 = full grass, 0 = full path (dirt)
+float path_factor(vec2 p)
+{
+    // p is pos.xy from the original plane space
+    float y = p.y;
+
+    // center line of the path: a gentle curve
+    float centerX = 0.3 * sin(1.5 * y);
+
+    // distance in x from the path center
+    float dist = abs(p.x - centerX);
+
+    // control path width and edge softness
+    float pathHalfWidth = 0.12;      // adjust to make the path wider/narrower
+    float edgeSoftness = 0.08;
+
+    // smoothstep(from, to, x): 0 when x<=from, 1 when x>=to
+    // We want: factor=0 near center, factor=1 far away
+    float f = smoothstep(pathHalfWidth, pathHalfWidth + edgeSoftness, dist);
+
+    return f; // 0 near path, 1 away from path
+}
+
+
 // Draw the terrain
 vec3 shading_terrain(vec3 pos) {
-	vec3 n = compute_normal(pos.xy, 0.01);
-	vec3 e = position.xyz;
-	vec3 p = pos.xyz;
-	vec3 s = lt[0].pos.xyz;
+    vec3 n = compute_normal(pos.xy, 0.01);
+    vec3 e = position.xyz;
+    vec3 p = pos.xyz;
+    vec3 s = lt[0].pos.xyz;
 
     n = normalize((model * vec4(n, 0)).xyz);
     p = (model * vec4(p, 1)).xyz;
 
-    vec3 color = shading_phong(lt[0], e, p, s, n).xyz;
+    vec3 lambertPhong = shading_phong(lt[0], e, p, s, n).xyz;
 
-	float h = pos.z + .8;
-	h = clamp(h, 0.0, 1.0);
-	vec3 emissiveColor = mix(vec3(.4,.6,.2), vec3(.4,.3,.2), h);
+    // --- existing height-based grass tint ---
+    float h = pos.z + .8;
+    h = clamp(h, 0.0, 1.0);
+    vec3 grassTint = mix(vec3(.4, .6, .2), vec3(.4, .3, .2), h);
+    vec3 grassColor = lambertPhong * grassTint;
 
-	return color * emissiveColor;
+    // --- new dirt path color ---
+    vec3 dirtColor = vec3(0.35, 0.26, 0.18); // warm brown; tweak as you like
+
+    // pathFactor = 0 on path, 1 away from path
+    float f = path_factor(pos.xy);
+
+    // blend: near path -> more dirt, away -> more grass
+    vec3 groundColor = mix(dirtColor, grassColor, f);
+
+    // apply fog based on world-space position p
+    groundColor = apply_fog(groundColor, p);
+
+    return groundColor;
 }
+
 
 void main()
 {
