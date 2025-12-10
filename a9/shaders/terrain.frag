@@ -111,18 +111,22 @@ vec3 apply_fog(vec3 color, vec3 worldPos)
     vec3 camPos = position.xyz;
     float distToCam = length(worldPos - camPos);
 
-    // push fog a bit farther out
-    float fogStart = 8.0;
-    float fogEnd   = 30.0;
+    // scene is small, so keep fog distances modest
+    float fogStart = 2.5;   // start fading after this distance
+    float fogEnd   = 9.0;   // mostly fogged by here
 
-    float fogFactor = clamp((fogEnd - distToCam) / (fogEnd - fogStart), 0.0, 1.0);
+    // 0 near, 1 far
+    float t = clamp((distToCam - fogStart) / (fogEnd - fogStart), 0.0, 1.0);
 
-    // brighter night sky so distant ground isn't pure black
-    vec3 fogColor = vec3(0.06, 0.09, 0.16);
+    // Tone the fog down so it’s subtle
+    float maxFog = 0.35;    // only fade ~35% into fog color at max distance
+    t *= maxFog;
 
-    return mix(fogColor, color, fogFactor);
+    // Neutral, slightly cool gray (not super blue)
+    vec3 fogColor = vec3(0.35, 0.38, 0.42);
+
+    return mix(color, fogColor, t);
 }
-
 
 float path_factor_world(vec3 worldPos)
 {
@@ -147,9 +151,6 @@ float path_factor_world(vec3 worldPos)
 
     return f; // 0 = dirt path center, 1 = grass
 }
-
-
-
 
 // Draw the terrain
 vec3 shading_terrain(vec3 pos) {

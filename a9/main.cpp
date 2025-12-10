@@ -46,6 +46,8 @@ public:
         OpenGLShaderLibrary::Instance()->Add_Shader_From_File("shaders/billboard.vert", "shaders/alphablend.frag", "billboard");
         OpenGLShaderLibrary::Instance()->Add_Shader_From_File("shaders/terrain.vert", "shaders/terrain.frag", "terrain");
         OpenGLShaderLibrary::Instance()->Add_Shader_From_File("shaders/skybox.vert", "shaders/skybox.frag", "skybox");
+        OpenGLShaderLibrary::Instance()->Add_Shader_From_File("shaders/tree.vert", "shaders/tree.frag", "tree");
+
 
         //// ---------- Textures (some of these are unused now, but harmless) ----------
         OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/earth_color.png", "sphere_color");
@@ -55,18 +57,6 @@ public:
         OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/window.png", "window_color");
         OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/buzz_color.png", "buzz_color");
         OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/star.png", "star_color");
-
-        // tree textures
-        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Bark__0.jpg", "bark0");
-        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Bark__1.jpg", "bark1");
-        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Bark__S.jpg", "barkS");
-        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Bottom_T.jpg", "barkBottom");
-        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Mossy_Tr.jpg", "mossyTree");
-        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Oak_Leav.jpg", "oakLeaves");
-        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Sonnerat.jpg", "sonnerat");
-        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/Walnut_L.jpg", "walnutLeaves");
-
-
 
         //// ---------- Lights ----------
         opengl_window->Add_Light(Vector3f(3, 1, 3), Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 1), Vector3f(0.5, 0.5, 0.5));
@@ -111,66 +101,81 @@ public:
             terrain->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("terrain"));
         }
 
-        //// trees alng path
+        //// trees along path
         {
-            const float xLeft = -6.0f;  // farther left
-            const float xRight = 1.2f;  // farther right
-            const float zPos = -2.0f;  // a bit "into" the scene
+            const int   NUM_TREES_PER_SIDE = 9;
 
-            // --- Left tree ---
-            {
-                auto tree = Add_Obj_Mesh_Object("obj/trees9.obj");
+            // base positions 
+            const float baseXLeft = -6.0f;
+            const float baseXRight = 1.2f;
+            const float baseY = -2.50f;
+            const float baseZ = -2.0f;
 
-                Matrix4f S, T;
-                S.setIdentity();
-                T.setIdentity();
+            // how far each pair is from the previous one (more negative = deeper into scene)
+            const float zStep = -0.7f;   // tweak this if they’re still too close/too far
 
-                S(0, 0) = S(1, 1) = S(2, 2) = 0.15f;
+            for (int i = 0; i < NUM_TREES_PER_SIDE; ++i) {
+                float z = baseZ + i * zStep;
 
-                T(0, 3) = xLeft;
-                T(1, 3) = -2.0f;
-                T(2, 3) = zPos;
+                // small side-to-side jitter so trees don’t form a perfect line
+                float xLeft = baseXLeft + 0.15f * ((i % 2 == 0) ? -1.0f : 1.0f);
+                float xRight = baseXRight + 0.15f * ((i % 2 == 0) ? 1.0f : -1.0f);
 
-                tree->Set_Model_Matrix(T * S);
+                // --- Left tree ---
+                {
+                    auto tree = Add_Obj_Mesh_Object("obj/trees9.obj");
 
-                tree->Set_Ka(Vector3f(0.05f, 0.1f, 0.05f));
-                tree->Set_Kd(Vector3f(0.2f, 0.5f, 0.2f));
-                tree->Set_Ks(Vector3f(0.05f, 0.05f, 0.05f));
-                tree->Set_Shininess(16.0f);
+                    Matrix4f S, T;
+                    S.setIdentity();
+                    T.setIdentity();
 
-                tree->Add_Texture("tex_color", OpenGLTextureLibrary::Get_Texture("mossyTree"));
+                    // same size as before
+                    S(0, 0) = S(1, 1) = S(2, 2) = 0.15f;
 
-                tree->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("basic"));
+                    // position on left side
+                    T(0, 3) = xLeft;
+                    T(1, 3) = baseY;
+                    T(2, 3) = z;
+
+                    tree->Set_Model_Matrix(T * S);
+
+                    // material
+                    tree->Set_Ka(Vector3f(0.05f, 0.1f, 0.05f));
+                    tree->Set_Kd(Vector3f(0.2f, 0.5f, 0.2f));
+                    tree->Set_Ks(Vector3f(0.05f, 0.05f, 0.05f));
+                    tree->Set_Shininess(16.0f);
+
+                    // NOTE: no Add_Texture here – we want pure shader color
+                    tree->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("tree"));
+                }
+
+                // --- Right tree ---
+                {
+                    auto tree = Add_Obj_Mesh_Object("obj/trees9.obj");
+
+                    Matrix4f S, T;
+                    S.setIdentity();
+                    T.setIdentity();
+
+                    S(0, 0) = S(1, 1) = S(2, 2) = 0.15f;
+
+                    T(0, 3) = xRight;
+                    T(1, 3) = baseY;
+                    T(2, 3) = z;
+
+                    tree->Set_Model_Matrix(T * S);
+
+                    tree->Set_Ka(Vector3f(0.05f, 0.1f, 0.05f));
+                    tree->Set_Kd(Vector3f(0.2f, 0.5f, 0.2f));
+                    tree->Set_Ks(Vector3f(0.05f, 0.05f, 0.05f));
+                    tree->Set_Shininess(16.0f);
+
+                    // again: no texture, just shader
+                    tree->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("tree"));
+                }
             }
-
-            // --- Right tree ---
-            {
-                auto tree = Add_Obj_Mesh_Object("obj/trees9.obj");
-
-                Matrix4f S, T;
-                S.setIdentity();
-                T.setIdentity();
-
-                S(0, 0) = S(1, 1) = S(2, 2) = 0.15f;
-
-                T(0, 3) = xRight;
-                T(1, 3) = -2.0f;
-                T(2, 3) = zPos;
-
-                tree->Set_Model_Matrix(T * S);
-
-                tree->Set_Ka(Vector3f(0.05f, 0.1f, 0.05f));
-                tree->Set_Kd(Vector3f(0.2f, 0.5f, 0.2f));
-                tree->Set_Ks(Vector3f(0.05f, 0.05f, 0.05f));
-                tree->Set_Shininess(16.0f);
-
-                tree->Add_Texture("tex_color", OpenGLTextureLibrary::Get_Texture("mossyTree"));
-
-                tree->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("basic"));
-            }
-
-
         }
+
 
         //// ---------- Finalize all mesh objects ----------
         for (auto& mesh_obj : mesh_object_array) {
