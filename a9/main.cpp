@@ -73,6 +73,16 @@ public:
         opengl_window->Add_Light(Vector3f(0, 0, -5), Vector3f(0.1, 0.1, 0.1), Vector3f(0.9, 0.9, 0.9), Vector3f(0.5, 0.5, 0.5));
         opengl_window->Add_Light(Vector3f(-5, 1, 3), Vector3f(0.1, 0.1, 0.1), Vector3f(0.9, 0.9, 0.9), Vector3f(0.5, 0.5, 0.5));
 
+        //// ---------- Background: Black Space with Twinkling Stars ----------
+        //// Uses a full-screen quad with procedural star rendering in the fragment shader.
+        //// The stars twinkle over time using sine-based brightness modulation.
+        //// No textures required - all stars are generated procedurally.
+        {
+            bgEffect = Add_Interactive_Object<OpenGLBgEffect>();
+            bgEffect->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("stars"));
+            bgEffect->Initialize();
+        }
+
 
         //// Terrain
         OpenGLTriangleMesh* terrain = nullptr;
