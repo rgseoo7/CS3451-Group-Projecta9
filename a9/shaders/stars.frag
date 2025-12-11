@@ -4,8 +4,6 @@ uniform vec2 iResolution;
 uniform float iTime;
 uniform int iFrame;
 
-uniform sampler2D tex_buzz; 
-
 in vec3 vtx_pos; // [-1, 1]
 in vec2 vtx_uv; // [0, 1]
 
@@ -52,7 +50,6 @@ void main()
     vec3 outputColor = renderStars(vtx_pos.xy);
 
     vec2 uv = vec2(vtx_uv.x, -vtx_uv.y);
-    vec3 buzzColor = texture(tex_buzz, uv).xyz;
 
-    frag_color = vec4(mix(outputColor, buzzColor, (sin(iTime) + 1) * .5 * .2), 1.0);
+    frag_color = vec4(outputColor, 1.0);
 }

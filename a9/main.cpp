@@ -21,18 +21,24 @@
 #define CLOCKS_PER_SEC 100000
 #endif
 
+using Clock = std::chrono::steady_clock;
+using TimePoint = std::chrono::time_point<Clock>;
+using Duration = std::chrono::duration<double>;
+
 class MyDriver : public OpenGLViewer
 {
     std::vector<OpenGLTriangleMesh *> mesh_object_array;
     OpenGLBgEffect *bgEffect = nullptr;
     OpenGLSkybox *skybox = nullptr;
     clock_t startTime;
+    TimePoint timeInit;
 
 public:
     virtual void Initialize()
     {
         draw_axes = false;
         startTime = clock();
+        timeInit = std::chrono::steady_clock::now();
         OpenGLViewer::Initialize();
     }
 
@@ -54,6 +60,7 @@ public:
         OpenGLShaderLibrary::Instance()->Add_Shader_From_File("shaders/billboard.vert", "shaders/alphablend.frag", "billboard");
         OpenGLShaderLibrary::Instance()->Add_Shader_From_File("shaders/terrain.vert", "shaders/terrain.frag", "terrain");
         OpenGLShaderLibrary::Instance()->Add_Shader_From_File("shaders/skybox.vert", "shaders/skybox.frag", "skybox");
+        OpenGLShaderLibrary::Instance()->Add_Shader_From_File("shaders/fireflies.vert", "shaders/fireflies.frag", "fireflies");
 
         //// Load all the textures you need for the scene
         //// In the function call of Add_Shader_From_File(), we specify two names:
@@ -71,6 +78,8 @@ public:
         OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/window.png", "window_color");
         OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/buzz_color.png", "buzz_color");
         OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/star.png", "star_color");
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/moon.png", "moon_color");
+        OpenGLTextureLibrary::Instance()->Add_Texture_From_File("tex/moon_normals.png", "moon_normal");
 
         //// Add all the lights you need for the scene (no more than 4 lights)
         //// The four parameters are position, ambient, diffuse, and specular.
@@ -258,6 +267,37 @@ public:
 
             //// bind shader to object
             sqad->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("billboard"));
+        }
+
+        {
+            auto moon = Add_Obj_Mesh_Object("obj/sphere.obj");
+
+            Duration duration = timeInit.time_since_epoch();
+            double rotation = duration.count();
+
+            Matrix4f t;
+            Matrix4f r;
+            Matrix4f s;
+            s << 1, 0, 0, -2,
+                 0, 1, 0, 3.5,
+                 0, 0, 1, -7.5,
+                 0, 0, 0, 1;
+            r << cos(rotation), 0, sin(rotation), 0,
+                 0, 1, 0, 0,
+                 -sin(rotation), 0, cos(rotation), 0,
+                 0, 0, 0, 1;
+            t = s * r;
+            moon->Set_Model_Matrix(t);
+
+            moon->Set_Ka(Vector3f(0.1, 0.1, 0.1));
+            moon->Set_Kd(Vector3f(0.7, 0.7, 0.7));
+            moon->Set_Ks(Vector3f(2, 2, 2));
+            moon->Set_Shininess(128);
+
+            moon->Add_Texture("tex_color", OpenGLTextureLibrary::Get_Texture("moon_color"));
+            moon->Add_Texture("tex_normal", OpenGLTextureLibrary::Get_Texture("moon_normal"));
+
+            moon->Add_Shader_Program(OpenGLShaderLibrary::Get_Shader("basic"));
         }
 
         //// Here we show an example of shading (ray-tracing) a sphere with environment mapping
